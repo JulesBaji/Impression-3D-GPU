@@ -1,0 +1,200 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>fc.Pom</groupId>
+	<artifactId>fc.Pom</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+	<packaging>pom</packaging>
+
+	<properties>
+		<!-- This is required. See https://stackoverflow.com/a/54167273. If we don't do this, J2SE-1.5 is used by default -->
+		<maven.compiler.target>1.8</maven.compiler.target>
+		<maven.compiler.source>1.8</maven.compiler.source>
+	</properties>
+  
+  <profiles>
+	<profile>
+			<id>swt-unix</id>
+			<activation>
+				<os>
+					<family>unix</family>
+				</os>
+			</activation>
+			<properties>
+				<swt.artifactId>org.eclipse.swt.gtk.linux.x86_64</swt.artifactId>
+				<env>linux</env>
+				<lwjgl.natives>natives-linux</lwjgl.natives>
+			</properties>
+		</profile>
+		<profile>
+			<id>swt-mac</id>
+			<activation>
+				<os>
+					<family>mac</family>
+				</os>
+			</activation>
+			<properties>
+				<swt.artifactId>org.eclipse.swt.cocoa.macosx.x86_64</swt.artifactId>
+				<env>mac</env>
+				<lwjgl.natives>natives-macos</lwjgl.natives>
+			</properties>
+		</profile>
+		<profile>
+			<id>swt-windows</id>
+			<activation>
+				<os>
+					<family>windows</family>
+				</os>
+			</activation>
+			<properties>
+				<swt.artifactId>org.eclipse.swt.win32.win32.x86_64</swt.artifactId>
+				<env>windows</env>
+				<lwjgl.natives>natives-windows</lwjgl.natives>
+			</properties>
+		</profile>
+	</profiles>
+
+	<dependencyManagement>
+		<dependencies>
+			<dependency>
+				<groupId>org.eclipse.platform</groupId>
+				<artifactId>${swt.artifactId}</artifactId>
+				<version>3.114.0</version>
+				<optional>true</optional>
+				<exclusions>
+					<exclusion>
+						<groupId>org.eclipse.platform</groupId>
+						<artifactId>org.eclipse.swt</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.platform</groupId>
+				<artifactId>org.eclipse.core.commands</artifactId>
+				<version>3.9.700</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.platform</groupId>
+				<artifactId>org.eclipse.equinox.common</artifactId>
+				<version>3.11.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.eclipse.platform</groupId>
+				<artifactId>org.eclipse.jface</artifactId>
+				<version>3.19.0</version>
+				<exclusions>
+					<exclusion>
+						<groupId>org.eclipse.platform</groupId>
+						<artifactId>org.eclipse.swt</artifactId>
+					</exclusion>
+				</exclusions>
+			</dependency>
+			<dependency>
+				<groupId>org.lwjgl</groupId>
+				<artifactId>lwjgl-bom</artifactId>
+				<version>3.2.3</version>
+				<scope>import</scope>
+				<type>pom</type>
+			</dependency>
+			
+			<!-- Bytedeco -->
+			<!-- https://mvnrepository.com/artifact/org.bytedeco/cpython -->
+			<dependency>
+			    <groupId>org.bytedeco</groupId>
+			    <artifactId>cpython</artifactId>
+			    <version>3.7.7-1.5.3</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.bytedeco/cpython-platform -->
+			<dependency>
+			    <groupId>org.bytedeco</groupId>
+			    <artifactId>cpython-platform</artifactId>
+			    <version>3.7.7-1.5.3</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.bytedeco/numpy -->
+			<dependency>
+			    <groupId>org.bytedeco</groupId>
+			    <artifactId>numpy</artifactId>
+			    <version>1.18.2-1.5.3</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.bytedeco/numpy-platform -->
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>numpy-platform</artifactId>
+	            <version>1.18.2-1.5.3</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>mkl-platform-redist</artifactId>
+	            <version>2020.1-1.5.3</version>
+	        </dependency>
+			<!-- https://mvnrepository.com/artifact/org.bytedeco/tensorflow -->
+			<dependency>
+			    <groupId>org.bytedeco</groupId>
+			    <artifactId>tensorflow</artifactId>
+			    <version>1.15.2-1.5.3</version>
+			</dependency>
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>tensorflow-platform</artifactId>
+	            <version>1.15.2-1.5.3</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>tensorflow-platform-python</artifactId>
+	            <version>1.15.2-1.5.3</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>tensorflow-platform-python-gpu</artifactId>
+	            <version>1.15.2-1.5.3</version>
+	        </dependency>
+	        <dependency>
+	            <groupId>org.bytedeco</groupId>
+	            <artifactId>tensorflow-platform-gpu</artifactId>
+	            <version>1.15.2-1.5.3</version>
+	        </dependency>
+			<!-- JNA -->
+			<dependency>
+				<groupId>net.java.dev.jna</groupId>
+				<artifactId>jna</artifactId>
+			    <version>5.5.0</version>
+			</dependency>
+			<dependency>
+				<groupId>net.java.dev.jna</groupId>
+				<artifactId>jna-platform</artifactId>
+			    <version>5.5.0</version>
+			</dependency>
+			<!-- Apache Commons -->
+			<dependency>
+			    <groupId>org.apache.commons</groupId>
+			    <artifactId>commons-lang3</artifactId>
+			    <version>3.9</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/commons-io/commons-io -->
+			<dependency>
+			    <groupId>commons-io</groupId>
+			    <artifactId>commons-io</artifactId>
+			    <version>2.7</version>
+			</dependency>
+			<!-- https://mvnrepository.com/artifact/org.apache.commons/commons-math3 -->
+			<dependency>
+			    <groupId>org.apache.commons</groupId>
+			    <artifactId>commons-math3</artifactId>
+			    <version>3.6.1</version>
+			</dependency>
+			<!-- Antlr -->
+			<dependency>
+			    <groupId>org.antlr</groupId>
+			    <artifactId>antlr4</artifactId>
+			    <version>4.5.3</version>
+			</dependency>
+			<!-- jSerialComm -->
+			<dependency>
+			    <groupId>com.fazecast</groupId>
+			    <artifactId>jSerialComm</artifactId>
+			    <version>2.5.2</version>
+			</dependency>
+		</dependencies>
+	</dependencyManagement>
+	
+</project>
