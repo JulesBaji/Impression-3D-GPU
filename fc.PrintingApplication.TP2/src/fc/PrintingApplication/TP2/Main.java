@@ -60,7 +60,7 @@ public class Main
 	
 		// Initialisez les dimensions de l'image
 		Build builder = new Build();
-		String filename = "3d_models/yoda.obj";
+		String filename = "3d_models/Cubewithhole.obj";
 		Parse obj = new Parse(builder, new File(filename).toURI().toURL());
 		AABB aabb = new AABB();   
 
@@ -84,7 +84,7 @@ public class Main
 		GL.createCapabilities();
 	
 		// Charger les triangles après avoir activé OpenGL
-		List<List<GLVec2fTriangle>> trianglesCoupes = parseObjFile("3d_models/yoda.obj", imageWidth, imageHeight, aabb);
+		List<List<GLVec2fTriangle>> trianglesCoupes = parseObjFile(filename, imageWidth, imageHeight, aabb);
 	
 		GLRenderTarget rt = new GLRenderTarget(imageWidth, imageHeight, GL30.GL_RGBA32I, GL30.GL_RGBA_INTEGER, GL11.GL_INT);
 	
@@ -106,13 +106,13 @@ public class Main
 			List<GLVec2fTriangle> coupe = trianglesCoupes.get(coupeIndex);
 	
 			rt.bind();
-			glClearColor(0.0f, 1.0f, 0.0f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+			glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL11.GL_STENCIL_BUFFER_BIT);
 	
 			shader.begin();
 			matParam.set(Matrix.createOrtho(-imageWidth / 2, imageWidth / 2, -imageHeight / 2, imageHeight / 2, -1, 1));
 	
-			// Rendre les triangles de cette coupe
+			// Rasteriser les triangles
 			for (GLVec2fTriangle tri : coupe) {
 				tri.render();
 			}
