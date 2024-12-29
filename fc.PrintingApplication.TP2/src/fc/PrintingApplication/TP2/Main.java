@@ -21,7 +21,14 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.Stack;
+
 import javax.imageio.ImageIO;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
@@ -38,6 +45,7 @@ import fc.GLObjects.GLProgram;
 import fc.GLObjects.GLRenderTarget;
 import fc.GLObjects.GLShaderMatrixParameter;
 
+import java.awt.geom.Line2D;
 import java.awt.geom.Point2D;
 import java.awt.Color;
 import fc.Math.*;
@@ -60,7 +68,7 @@ public class Main
 	
 		// Initialisez les dimensions de l'image
 		Build builder = new Build();
-		String filename = "3d_models/Cubewithhole.obj";
+		String filename = "3d_models/CuteOcto.obj";
 		Parse obj = new Parse(builder, new File(filename).toURI().toURL());
 		AABB aabb = new AABB();   
 
@@ -84,7 +92,8 @@ public class Main
 		GL.createCapabilities();
 	
 		// Charger les triangles après avoir activé OpenGL
-		List<List<GLVec2fTriangle>> trianglesCoupes = parseObjFile(filename, imageWidth, imageHeight, aabb);
+		List<List<Point2D>> sommetsCoupes = new ArrayList<>();  
+		List<List<GLVec2fTriangle>> trianglesCoupes = parseObjFile(filename, imageWidth, imageHeight, aabb, sommetsCoupes);
 	
 		GLRenderTarget rt = new GLRenderTarget(imageWidth, imageHeight, GL30.GL_RGBA32I, GL30.GL_RGBA_INTEGER, GL11.GL_INT);
 	
@@ -135,24 +144,194 @@ public class Main
 				}
 			}
 	
-			// Créer un dossier 'results' s'il n'existe pas déjà
-			File resultsDir = new File(System.getProperty("user.dir"), "results");
-			if (!resultsDir.exists()) {
-				resultsDir.mkdir();  // Crée le dossier si nécessaire
-			}
+			// // Créer un dossier 'results' s'il n'existe pas déjà
+			// File resultsDir = new File(System.getProperty("user.dir"), "results");
+			// if (!resultsDir.exists()) {
+			// 	resultsDir.mkdir();  // Crée le dossier si nécessaire
+			// }
 
-			// Sauvegarder l'image pour cette coupe dans le dossier 'results'
-			File outputFile = new File(resultsDir, "result_coupe_" + coupeIndex + ".png");
+			// // Sauvegarder l'image pour cette coupe dans le dossier 'results'
+			// File outputFile = new File(resultsDir, "result_coupe_" + coupeIndex + ".png");
+			// try {
+			// 	ImageIO.write(img, "png", outputFile);
+			// } catch (IOException e) {
+			// 	System.out.println("Error, IOException caught: " + e.toString());
+			// }
+		}
+		rt.dispose();
+
+		List<List<Point2D>> sommetsCoupesOrdonnes = orderAllContours(sommetsCoupes);
+		// sauvegarderContoursSimplifies(contoursSimplififies, imageWidth, imageHeight, taillePixel);
+		List<Point2D> test = simplify(sommetsCoupesOrdonnes.get(5), taillePixel);
+		for (Point2D p : test){
+			System.out.println(p);
+		} 
+		try { 
+			File dir = new File("test");
+			if (!dir.exists()) dir.mkdir();
+			ImageIO.write(dessinerContoursSimplifies(test, imageWidth, imageHeight, taillePixel/2), "png", new File("test/resultat.png"));
+		} catch (Exception e) { 
+			e.printStackTrace(); 
+		}
+
+		
+	}
+
+	// Fonction principale qui simplifie une liste de points
+	public static List<Point2D> simplify(List<Point2D> points, double epsilon) {
+		if (epsilon <= 0) {
+			throw new IllegalArgumentException("Epsilon must be > 0");
+		}
+		return ramerDouglasPeucker(points, 0, points.size() - 1, epsilon);
+	}
+
+	// Algorithme de simplification (Ramer-Douglas-Peucker)
+	private static List<Point2D> ramerDouglasPeucker(List<Point2D> points, int startIndex, int endIndex, double epsilon) {
+			double maxDist = 0;
+			int idx = 0;
+	
+			// Calcul de la ligne entre le premier et le dernier point
+			Point2D start = points.get(startIndex);
+			Point2D end = points.get(endIndex);
+			double a = end.getY() - start.getY();
+			double b = start.getX() - end.getX();
+			double c = start.getX() * end.getY() - start.getY() * end.getX();
+	
+			// Calcul de la distance perpendiculaire pour chaque point entre start et end
+			for (int i = startIndex + 1; i < endIndex; i++) {
+				Point2D current = points.get(i);
+				double distance = Math.abs(a * current.getX() + b * current.getY() + c) / Math.sqrt(a * a + b * b);
+				if (distance > maxDist) {
+					maxDist = distance;
+					idx = i;
+				}
+			}
+	
+			List<Point2D> result = new ArrayList<>();
+	
+			// Si la distance maximale est plus grande que epsilon, diviser et simplifier récursivement
+			if (maxDist >= epsilon) {
+				List<Point2D> firstPart = ramerDouglasPeucker(points, startIndex, idx, epsilon);
+				List<Point2D> secondPart = ramerDouglasPeucker(points, idx, endIndex, epsilon);
+	
+				// Fusionner les résultats en une seule liste
+				result.addAll(firstPart.subList(0, firstPart.size() - 1)); // éviter de dupliquer le point de jonction
+				result.addAll(secondPart);
+			} else {
+				// Si la distance est inférieure à epsilon, garder seulement les deux points
+				result.add(start);
+				result.add(end);
+			}
+	
+			return result;
+		}
+
+	// Méthode pour ordonner tous les contours dans une liste de contours
+	public static List<List<Point2D>> orderAllContours(List<List<Point2D>> sommetsCoupes) {
+		List<List<Point2D>> orderedContours = new ArrayList<>();
+
+		// Appliquer orderContour à chaque contour dans la liste
+		for (List<Point2D> contour : sommetsCoupes) {
+			List<Point2D> orderedContour = orderContour(contour);
+			orderedContours.add(orderedContour);
+		}
+
+		return orderedContours;
+	}
+
+    public static List<Point2D> orderContour(List<Point2D> contour) {
+        // Assurez-vous que le contour contient au moins deux points
+        if (contour.size() <= 1) return contour;
+
+        // Liste des sommets ordonnés
+        List<Point2D> orderedContour = new ArrayList<>();
+        
+        // Choisir un point de départ (ici, le premier)
+        Point2D startPoint = contour.get(0);
+        orderedContour.add(startPoint);
+
+        // Crée une copie de la liste des points restants
+        List<Point2D> remainingPoints = new ArrayList<>(contour);
+        remainingPoints.remove(startPoint);
+
+        // Trouver les points successifs en fonction des voisins les plus proches
+        Point2D currentPoint = startPoint;
+        while (!remainingPoints.isEmpty()) {
+            Point2D closestPoint = findClosestPoint(currentPoint, remainingPoints);
+            orderedContour.add(closestPoint);
+            remainingPoints.remove(closestPoint);
+            currentPoint = closestPoint;
+        }
+
+        // Fermer le contour (revenir au premier point)
+        orderedContour.add(orderedContour.get(0));
+
+        return orderedContour;
+    }
+
+    // Fonction pour trouver le point le plus proche
+    private static Point2D findClosestPoint(Point2D point, List<Point2D> remainingPoints) {
+        Point2D closestPoint = remainingPoints.get(0);
+        double minDistance = point.distance(closestPoint);
+
+        for (Point2D p : remainingPoints) {
+            double distance = point.distance(p);
+            if (distance < minDistance) {
+                closestPoint = p;
+                minDistance = distance;
+            }
+        }
+        return closestPoint;
+    }
+
+	// Dessiner les contours simplifiés sur une nouvelle image
+	public static BufferedImage dessinerContoursSimplifies(List<Point2D> contour, int imageWidth, int imageHeight, float taillePixel) {
+        BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = image.createGraphics();
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(0, 0, image.getWidth(), image.getHeight());
+        g2d.setColor(Color.WHITE);
+        g2d.translate(imageWidth/2, imageHeight/2);
+
+		for (int i = 0; i < contour.size() - 1; i++) {
+			Point2D p1 = contour.get(i);
+			Point2D p2 = contour.get(i + 1);
+			g2d.draw(new Line2D.Double(p1.getX()/taillePixel, p1.getY()/taillePixel, p2.getX()/taillePixel, p2.getY()/taillePixel));
+		}
+
+		// Relier le dernier point au premier pour fermer le contour
+		if (!contour.isEmpty()) {
+			Point2D first = contour.get(0);
+			Point2D last = contour.get(contour.size() - 1);
+			g2d.draw(new Line2D.Double(first.getX()/taillePixel, first.getY()/taillePixel, last.getX()/taillePixel, last.getY()/taillePixel));
+		}
+
+		g2d.dispose();
+		return image;
+	}
+
+	// Sauvegarder les images des contours simplifiés
+	public static void sauvegarderContoursSimplifies(List<List<Point2D>> contoursSimplifies, int imageWidth, int imageHeight, float taillePixel) {
+		// Créer un dossier 'results_simplified' s'il n'existe pas déjà
+		File resultsDir = new File(System.getProperty("user.dir"), "results_simplified");
+		if (!resultsDir.exists()) {
+			resultsDir.mkdir(); // Crée le dossier si nécessaire
+		}
+
+		// Générer et sauvegarder chaque image
+		for (int i = 0; i < contoursSimplifies.size(); i++) {
+			BufferedImage img = dessinerContoursSimplifies(contoursSimplifies.get(i), imageWidth, imageHeight, taillePixel);
+
+			File outputFile = new File(resultsDir, "simplified_result_coupe_" + i + ".png");
 			try {
 				ImageIO.write(img, "png", outputFile);
 			} catch (IOException e) {
-				System.out.println("Error, IOException caught: " + e.toString());
+				System.out.println("Erreur lors de la sauvegarde de l'image : " + e.toString());
 			}
 		}
-		rt.dispose();
-	}	
+	}
 	
-	public static List<List<GLVec2fTriangle>> parseObjFile(String filename, int imageWidth, int imageHeight, AABB aabb)
+	public static List<List<GLVec2fTriangle>> parseObjFile(String filename, int imageWidth, int imageHeight, AABB aabb, List<List<Point2D>> sommetsCoupes)
 	{
 	    try
 	    {
@@ -163,7 +342,7 @@ public class Main
             // Périmètre de l'objet dans le plan xy selon z
             for(float z = aabb.getMin().z; z <= aabb.getMax().z; z += 0.2)
             {
-                trianglesCoupes.add(coupe(imageWidth, imageHeight, builder, z, aabb));
+                trianglesCoupes.add(coupe(imageWidth, imageHeight, builder, z, aabb, sommetsCoupes));
             }
 			return trianglesCoupes;
 	    }
@@ -181,7 +360,7 @@ public class Main
 	    }
 	}
 
-    private static List<GLVec2fTriangle> coupe(int imageWidth, int imageHeight, Build builder, float z, AABB aabb) throws IOException {
+    private static List<GLVec2fTriangle> coupe(int imageWidth, int imageHeight, Build builder, float z, AABB aabb, List<List<Point2D>> sommetsCoupes) throws IOException {
         BufferedImage image = new BufferedImage(imageWidth, imageHeight, BufferedImage.TYPE_INT_RGB);
         Graphics2D g2d = image.createGraphics();
         g2d.setColor(Color.BLACK);
@@ -189,9 +368,8 @@ public class Main
         g2d.setColor(Color.WHITE);
         g2d.translate(imageWidth/2, imageHeight/2);
 
-		List<Point2D> sommets = new ArrayList<>();  
-
         // Parcours des faces et calcul des segments
+		List<Point2D> sommets = new ArrayList<>();
         for (Face face : builder.faces)
         {     
             List<Point2D> sommetsTest = new ArrayList<>();  
@@ -221,15 +399,9 @@ public class Main
 
 		List<Point2D> sommetsTriangles = new ArrayList<>();
 		List<GLVec2fTriangle> triangles = triangulationDelaunay(sommets, imageWidth, imageHeight, taillePixel, sommetsTriangles);
-		// for (int i = 0; i < sommetsTriangles.size() - 1; i++) {
-		// 	Point2D point1 = sommetsTriangles.get(i);
-		// 	Point2D point2 = sommetsTriangles.get(i + 1);
-		// 	g2d.draw(new Line2D.Double(point1.getX(), point1.getY(), point2.getX(), point2.getY()));
-		// 	g2d.draw(new Line2D.Double(point1.getX(), point1.getY(), point1.getX(), point1.getY()));
-		// 	g2d.draw(new Line2D.Double(point2.getX(), point2.getY(), point2.getX(), point2.getY()));
-		// }
+		sommetsCoupes.add(sommets);
 
-        // Sauvegarde de l’image
+        // // Sauvegarde de l’image
         // try { 
         //     File dir = new File("coupes");
         //     if (!dir.exists()) dir.mkdir();
@@ -265,7 +437,7 @@ public class Main
 	
 		// Filtrer les points trop proches
 		List<Pnt> filteredPoints = new ArrayList<>();
-		double threshold = 1e-5; // Distance minimale entre deux points
+		double threshold = 1; // Distance minimale entre deux points
 		for (Pnt p : points) {
 			boolean isTooClose = false;
 			for (Pnt existing : filteredPoints) {
