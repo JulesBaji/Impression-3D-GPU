@@ -12,8 +12,6 @@ Projet d'impression 3D du master Informatique ISICG (Université de Limoges, 202
 - **Rastérisation GPU** des triangles de chaque coupe dans une image (OpenGL hors écran).
 - Remise en ordre des points du contour et **simplification de Ramer-Douglas-Peucker**.
 
-![Résultat](fc.PrintingApplication.TP2/result.png)
-
 ## Limites connues
 
 - La triangulation de Delaunay porte sur les points de la coupe sans tenir compte du contour : des triangles apparaissent hors de la pièce et les trous ne sont pas respectés.
