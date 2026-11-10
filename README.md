@@ -1,8 +1,8 @@
-# Impression 3D : découpe géométrique en couches
+# Impression 3D : découpe en couches (prototype)
 
 Projet d'impression 3D du master Informatique ISICG (Université de Limoges, 2024), en Java avec OpenGL (LWJGL).
 
-Le programme découpe un maillage 3D en couches pour l'impression : intersections plan-triangle, triangulation de Delaunay et simplification des contours.
+Il prépare un modèle 3D pour une imprimante en le découpant en couches.
 
 ## Ce qui est implémenté
 
